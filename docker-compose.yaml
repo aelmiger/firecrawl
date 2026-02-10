@@ -72,9 +72,13 @@ services:
     networks:
       - backend
     # Resource limits for Docker Compose (not Swarm)
-    cpus: 2.0
-    mem_limit: 4G
-    memswap_limit: 4G
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -89,7 +93,7 @@ services:
     environment:
       <<: *common-env
       HOST: "0.0.0.0"
-      PORT: ${INTERNAL_PORT:-3002}
+      PORT: ${PORT:-3002}
       EXTRACT_WORKER_PORT: ${EXTRACT_WORKER_PORT:-3004}
       WORKER_PORT: ${WORKER_PORT:-3005}
       NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
@@ -101,14 +105,24 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-    ports:
-      - "${PORT:-3002}:${INTERNAL_PORT:-3002}"
+    # Expose port internally without mapping to host
+    # Coolify will handle the external routing
+    expose:
+      - "${PORT:-3002}"
     command: node dist/src/harness.js --start-docker
     # Resource limits for Docker Compose (not Swarm)
     # Increase if you have more CPU cores/RAM available
-    cpus: 4.0
-    mem_limit: 8G
-    memswap_limit: 8G
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          memory: 4G
+    labels:
+      # Coolify labels for proper routing
+      - "coolify.managed=true"
+      - "coolify.type=application"
 
   redis:
     # NOTE: If you want to use Valkey (open source) instead of Redis (source available),
@@ -153,6 +167,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
     networks:
       - backend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     logging:
       driver: "json-file"
       options:
@@ -163,3 +179,7 @@ services:
 networks:
   backend:
     driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
