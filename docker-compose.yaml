@@ -71,14 +71,6 @@ services:
       MAX_CONCURRENT_PAGES: ${CRAWL_CONCURRENT_REQUESTS:-10}
     networks:
       - backend
-    # Resource limits for Docker Compose (not Swarm)
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          memory: 2G
     logging:
       driver: "json-file"
       options:
@@ -110,15 +102,6 @@ services:
     expose:
       - "${PORT:-3002}"
     command: node dist/src/harness.js --start-docker
-    # Resource limits for Docker Compose (not Swarm)
-    # Increase if you have more CPU cores/RAM available
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'
-          memory: 8G
-        reservations:
-          memory: 4G
     labels:
       # Coolify labels for proper routing
       - "coolify.managed=true"
